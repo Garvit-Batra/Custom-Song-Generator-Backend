@@ -75,7 +75,7 @@ app.post("/submitform", (req, res) => {
     fs.remove("songs");
     fs.remove("output.mp3");
     console.log("files removed");
-  }, 40000);
+  }, 100000);
 });
 
 app.listen(port, () => {
