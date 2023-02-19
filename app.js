@@ -3,6 +3,7 @@ const express = require("express");
 var nodemailer = require("nodemailer");
 const { spawn } = require("child_process");
 const cors = require("cors");
+const fs = require("fs-extra");
 const app = express();
 
 app.use(cors());
@@ -70,6 +71,11 @@ app.post("/submitform", (req, res) => {
       });
     });
   }, 30000);
+  setTimeout(() => {
+    fs.remove("songs");
+    fs.remove("output.mp3");
+    console.log("files removed");
+  }, 40000);
 });
 
 app.listen(port, () => {
