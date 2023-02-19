@@ -13,24 +13,12 @@ const port = process.env.PORT || 3001;
 app.get("/", (req, res) => {
   res.send("api");
 });
-function handleLoop(formData) {
-  formData.forEach((element, index) => {
-    const python = spawn("python", [
-      "mashup.py",
-      element.link,
-      element.st,
-      element.et,
-    ]);
-    python.stderr.on("data", (data) => {
-      console.error(`Python script error: ${data.toString()}`);
-    });
-  });
-}
-let handleMerge = (email) => {
-  const merge = spawn("python", ["merge.py", "output.mp3"]);
-  merge.stderr.on("data", (data) => {
-    console.error(`Python script error: ${data.toString()}`);
-  });
+
+app.post("/submitform", (req, res) => {
+  res.sendFile(__dirname + "/greetings.html");
+  const formData = req.body.inputFields;
+  const email = req.body.email;
+  console.log(formData);
   const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
     port: 465,
@@ -55,26 +43,33 @@ let handleMerge = (email) => {
       },
     ],
   };
-  merge.on("close", () => {
-    console.log("Python execution completed!");
-    transporter.sendMail(mailOptions, (error) => {
-      if (error) {
-        console.log(error);
-      } else {
-        console.log("Mail sent!");
-      }
+  formData.forEach((element, index) => {
+    const python = spawn("python", [
+      "mashup.py",
+      element.link,
+      element.st,
+      element.et,
+    ]);
+    python.stderr.on("data", (data) => {
+      console.error(`Python script error: ${data.toString()}`);
     });
   });
-};
-app.post("/submitform", (req, res) => {
-  res.sendFile(__dirname + "/greetings.html");
-  const formData = req.body.inputFields;
-  const email = req.body.email;
-  console.log(formData);
-  handleLoop(formData);
   setTimeout(() => {
-    handleMerge(email);
-  }, 20000);
+    const merge = spawn("python", ["merge.py", "output.mp3"]);
+    merge.stderr.on("data", (data) => {
+      console.error(`Python script error: ${data.toString()}`);
+    });
+    merge.on("close", () => {
+      console.log("Python execution completed!");
+      transporter.sendMail(mailOptions, (error) => {
+        if (error) {
+          console.log(error);
+        } else {
+          console.log("Mail sent!");
+        }
+      });
+    });
+  }, 30000);
 });
 
 app.listen(port, () => {
