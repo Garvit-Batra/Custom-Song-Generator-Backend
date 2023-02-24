@@ -16,10 +16,11 @@ app.get("/", (req, res) => {
 });
 
 app.post("/submitform", (req, res) => {
-  res.sendFile(__dirname + "/greetings.html");
-  const formData = req.body.inputFields;
+  // res.sendFile(__dirname + "/greetings.html");
+  const formData = JSON.stringify(req.body.inputFields);
   const email = req.body.email;
   console.log(formData);
+  console.log(email);
   const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
     port: 465,
@@ -44,18 +45,16 @@ app.post("/submitform", (req, res) => {
       },
     ],
   };
-  formData.forEach((element, index) => {
-    const python = spawn("python", [
-      "mashup.py",
-      element.link,
-      element.st,
-      element.et,
-    ]);
-    python.stderr.on("data", (data) => {
-      console.error(`Python script error: ${data.toString()}`);
-    });
+  const python = spawn("python", ["mashup.py", formData]);
+  python.stderr.on("data", (data) => {
+    console.error(`Python script error: ${data.toString()}`);
   });
-  setTimeout(() => {
+  python.stdout.on("data", (data) => {
+    mystr = data.toString();
+    console.log(mystr);
+  });
+  python.on("close", () => {
+    console.log("Python execution completed");
     const merge = spawn("python", ["merge.py", "output.mp3"]);
     merge.stderr.on("data", (data) => {
       console.error(`Python script error: ${data.toString()}`);
@@ -67,15 +66,13 @@ app.post("/submitform", (req, res) => {
           console.log(error);
         } else {
           console.log("Mail sent!");
+          fs.remove("songs");
+          // fs.remove("output.mp3");
+          console.log("files removed");
         }
       });
     });
-  }, 30000);
-  setTimeout(() => {
-    fs.remove("songs");
-    fs.remove("output.mp3");
-    console.log("files removed");
-  }, 100000);
+  });
 });
 
 app.listen(port, () => {
